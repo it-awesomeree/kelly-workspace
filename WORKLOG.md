@@ -6,6 +6,24 @@ Kelly's activity log for the AWESOMEREE Web App. Entries are organized by work s
 
 ---
 
+### Session 0303-1 (2026-03-03)
+
+**VM TT — WhatsApp Screenshot Bot Selector Fix**
+
+- **Context**: 3 Python scripts on VM TT (`Screenshots my sg tt/`) that screenshot account health reports and send them to WhatsApp group "Awesomeree Discussion" were all failing. Scripts: `TT-AcountHealthScreenshot.py` (TikTok), `Shopee.py` (Shopee MY), `SGShopee.py` (Shopee SG)
+- **Issue diagnosed**: WhatsApp Web updated its DOM — the search box changed from a `<p>` element inside nested `<div>`s to an `<input>` element with `data-tab="3"` attribute
+- **Old selector (broken)**: `div.x1hx0egp.x6ikm8r.x1odjw0f.x6prxxf.x1k6rcq7.x1whj5v > p`
+- **New selector (fixed)**: `input[data-tab='3']`
+- **Files changed on VM TT**:
+  - `Screenshots my sg tt/TT-AcountHealthScreenshot.py` (line 89)
+  - `Screenshots my sg tt/Shopee.py` (line 137)
+  - `Screenshots my sg tt/SGShopee.py` (line 114)
+- **PR to bot-scripts**: Prepared PR title + description, but could not push — GitHub MCP token lacks access to `it-awesomeree/bot-scripts`, gh CLI not installed, Chrome DevTools MCP connects to debug Chrome (not logged into GitHub). PR creation pending manual action.
+- **Other finding**: `TT-AcountHealthScreenshot.py` has no `logging.basicConfig()` — all `logging.info()` calls are silently ignored. `Shopee.py` and `SGShopee.py` have logging configured properly.
+- **Tools used**: VM Control Plane (vm_status, vm_read_file, vm_execute, vm_processes), Chrome DevTools MCP
+
+---
+
 ### Session 0302-1 (2026-03-02)
 
 **VVIP Comp Analysis — Bug Fixes, UI Simplification & Variation Count**

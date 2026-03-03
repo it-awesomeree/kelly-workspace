@@ -8,6 +8,28 @@ Errors encountered during development and how they were resolved. Prevents repea
 
 ---
 
+### Session 0303-1 (2026-03-03)
+
+- **Error**: WhatsApp screenshot bots on VM TT failing with `TimeoutException` — cannot find WhatsApp search box
+- **Discovered by**: Kelly (ran `TT-AcountHealthScreenshot.py` on VM TT, got TimeoutException at line 90)
+- **Root cause**: WhatsApp Web DOM update changed the search box from `<p>` element (inside nested divs with obfuscated classes) to `<input role="textbox" data-tab="3">`. Old CSS selector `div.x1hx0egp.x6ikm8r.x1odjw0f.x6prxxf.x1k6rcq7.x1whj5v > p` no longer matches.
+- **Impact**: All 3 screenshot scripts (TikTok, Shopee MY, Shopee SG) could not send reports to "Awesomeree Discussion" WhatsApp group
+- **Resolution**: Updated selector to `input[data-tab='3']` in all 3 files via VM Control Plane `vm_execute`
+- **Prevention**: Use stable attribute-based selectors (`data-tab`, `aria-label`, `role`) instead of obfuscated CSS class names. WhatsApp Web frequently changes class names but keeps functional attributes stable.
+- **Status**: RESOLVED
+
+---
+
+- **Error**: GitHub MCP token cannot access `it-awesomeree/bot-scripts` private repo
+- **Discovered by**: Claude Code (all MCP GitHub API calls return "Not Found")
+- **Root cause**: Same recurring issue — MCP GitHub token not authorized for this private repo. Token update attempted but did not resolve.
+- **Impact**: Cannot create PR or push code via MCP tools
+- **Resolution**: Pending — need to either update token permissions or push manually via GitHub Desktop
+- **Prevention**: For `it-awesomeree` private repos, default to GitHub Desktop or browser-based PR creation
+- **Status**: UNRESOLVED
+
+---
+
 ### Session 0302-1 (2026-03-02)
 
 - **Error**: Bug 4 — BBM Kerusi Lipat Bamboo Chair showed only 4/8 comp variations in VVIP page
