@@ -6,6 +6,39 @@ Kelly's activity log for the AWESOMEREE Web App. Entries are organized by work s
 
 ---
 
+### Session 0304-2 (2026-03-04)
+
+**Add Shopee SG Comp Analysis Page**
+
+- **Context**: New Shopee SG page needed at `/analytics/table/shopee-sg`, identical functionality to VVIP but filtering by `region='SG'`. The `region` column already exists in both `Shopee_My_Products` and `Shopee_Comp_Data` (default 'MY'). No SG data exists yet.
+- **Approach**: Reuse VVIP repository (`shopee-vvip-products-repository.ts`) with optional `region` parameter — zero code duplication. Tech lead recommendation: adding future regions (TH, PH) = just a new API route + page, no repo changes.
+- **Files created (6)**:
+  - `app/analytics/table/shopee-sg/layout.tsx` — pass-through layout
+  - `app/analytics/table/shopee-sg/lib/api.ts` — frontend API client → `/api/shopee-sg/products`
+  - `app/analytics/table/shopee-sg/page.tsx` — full page copied from VVIP, all refs → "Shopee SG"
+  - `app/api/shopee-sg/products/route.ts` — main API with `REGION = "SG"`
+  - `app/api/shopee-sg/products/counts/route.ts` — tab counts with `REGION = "SG"`
+  - `app/api/shopee-sg/products/details/route.ts` — details with `REGION = "SG"`
+- **Files modified (7)**:
+  - `lib/services/shopee-vvip-products-repository.ts` — added optional `region?` param to `fetchVvipProducts`, `fetchVvipProductCounts`, `fetchVvipProductDetails`. Added `vvipJoinForRegion()` helper. Region added to cache key, `buildWhere()`, `buildMpOnlyWhere()`.
+  - `components/analysis-sub-navigation.tsx` — added "Shopee SG" tab
+  - `components/analysis-sub-navigation-mobile.tsx` — added "Shopee SG" tab
+  - `lib/type.ts` — added `"Shopee SG"` to `TabType` union
+  - `app/api/shopee-my-vvip/products/route.ts` — added `REGION = "MY"` for isolation
+  - `app/api/shopee-my-vvip/products/counts/route.ts` — added `REGION = "MY"`
+  - `app/api/shopee-my-vvip/products/details/route.ts` — added `REGION = "MY"`
+- **Data isolation**: VVIP passes `region="MY"` (WHERE + JOIN), SG passes `region="SG"`. Shopee MY uses different repo — untouched. Zero cross-contamination.
+- **Similarity**: All 10 similarity columns remain `NULL AS` in shared repo (matches `test` branch state). When similarity is ready, change in shared repo applies to both VVIP and SG automatically.
+- **SG page string replacements from VVIP**: API endpoints, TabType `"Shopee MY"` → `"Shopee SG"`, display text, log labels, model_name, localStorage keys (`shopeeMY:*` → `shopeeSG:*`)
+- **Branch**: `feature/shopee-sg-comp-analysis` (created from `test`, cherry-picked from `kelly-sg-page-comp-analysis`)
+- **PR**: Not yet created — branch pushed to remote. Need to create via GitHub web UI → base: `test`
+- **PR workflow note**: Branch was created from `test` (not `main`) because VVIP files only exist on `test`. Agnes's new PR flow requires branching from `main` — need to clarify with Agnes for this case.
+- **Build verification**: Zero new TS errors. Pre-existing build failures unrelated (missing `@tanstack/react-virtual`, `cron-parser`).
+- **Tools used**: Code editing, git cherry-pick, GitHub push, TypeScript compiler, sed for bulk string replacement
+- **Status**: Code done, branch pushed, PR pending creation
+
+---
+
 ### Session 0304-1 (2026-03-04)
 
 **Fix: Uncategorized product among VVIPs + Cap COMP to top 3**

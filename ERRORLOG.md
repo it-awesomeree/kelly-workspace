@@ -8,6 +8,27 @@ Errors encountered during development and how they were resolved. Prevents repea
 
 ---
 
+### Session 0304-2 (2026-03-04)
+
+- **Error**: Cherry-pick from `test`-based branch onto `main`-based branch causes massive conflicts
+- **Context**: Tried creating `feature/shopee-sg-comp-analysis-v2` from `main` and cherry-picking the SG commit — to follow Agnes's PR flow (branch from `main`)
+- **Root cause**: VVIP files (`shopee-vvip-products-repository.ts`, `app/api/shopee-my-vvip/*`, nav tabs) only exist on `test`, not `main`. Cherry-pick reports "modify/delete" conflicts for all these files.
+- **Impact**: Cannot create a `main`-based branch for SG feature — too many dependencies on `test`-only code
+- **Resolution**: Aborted cherry-pick, kept `test`-based branch. Need to clarify with Agnes whether `test`-based branching is acceptable when feature depends on `test`-only files.
+- **Prevention**: Before following branch-from-main workflow, check if modified files exist on `main`. If they don't, branch from `test` and discuss with lead.
+- **Status**: RESOLVED (workaround — using `test`-based branch)
+
+---
+
+- **Error**: GitHub MCP tools returning "Not Found" for `it-awesomeree/awesomeree-web-app`
+- **Context**: Tried `mcp__github__create_pull_request` to create PR for SG feature branch
+- **Root cause**: Same recurring issue — MCP GitHub token lacks access to private org repo
+- **Resolution**: Pushed branch via git CLI, PR to be created manually via GitHub web UI
+- **Prevention**: For `it-awesomeree` private repos, always use git CLI for push and GitHub web UI for PR creation
+- **Status**: RESOLVED (workaround)
+
+---
+
 ### Session 0304-1 (2026-03-04)
 
 - **Error 1**: HTTP 500 — "Column 'our_link' in where clause is ambiguous"
