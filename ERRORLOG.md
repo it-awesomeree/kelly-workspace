@@ -8,6 +8,44 @@ Errors encountered during development and how they were resolved. Prevents repea
 
 ---
 
+### Session 0306-3 (2026-03-06)
+
+- **Error**: Merge conflicts when PR'ing `feature/shopee-sg-page` (from `main`) to `test`
+- **Context**: Created branch from `main`, copied SG files. But `test` already had SG files importing from `shopee-vvip-products-repository` (old implementation).
+- **Root cause**: `test` branch had existing SG code using different import paths (VVIP repo) than the new standalone repo approach. Cherry-picking/merging creates conflicts on every SG file.
+- **Resolution**: Abandoned first branch. Created `feature/shopee-sg-page-v2` from `test` instead and modified existing files in-place to use the new standalone `shopee-sg-products-repository.ts`.
+- **Prevention**: Before creating a branch from `main` for PR to `test`, check if `test` already has related files that would conflict. If so, branch from `test` directly.
+- **Status**: RESOLVED
+
+---
+
+- **Error**: `next-env.d.ts` blocking git checkout
+- **Context**: Trying to switch branches, got "error: Your local changes to the following files would be overwritten by checkout: next-env.d.ts"
+- **Root cause**: Auto-generated TypeScript env file had local modifications from `npm run dev`
+- **Resolution**: `git checkout -- next-env.d.ts` to discard local changes before switching
+- **Prevention**: Add `next-env.d.ts` to `.gitignore` or always discard its changes before branch switches
+- **Status**: RESOLVED
+
+---
+
+- **Error**: `git push` rejected on `feature/shopee-sg-page-main`
+- **Context**: Push failed with "Updates were rejected because the remote contains work that you do not have locally"
+- **Root cause**: CI agent or automated process had pushed new changes to the remote branch
+- **Resolution**: `git pull --rebase origin feature/shopee-sg-page-main` then push again
+- **Prevention**: Always pull before pushing, especially on branches that CI agents may modify
+- **Status**: RESOLVED
+
+---
+
+- **Error**: GitHub MCP `create_pull_request` returns "Not Found" for private repo
+- **Context**: Attempted `mcp__github__create_pull_request` for `it-awesomeree/AWESOMEREE-WEB-APP`
+- **Root cause**: Same recurring issue — MCP GitHub token lacks access to private org repos
+- **Resolution**: Provided Kelly with manual PR creation URLs for both `main` and `test` PRs
+- **Prevention**: For `it-awesomeree` private repos, always use git CLI for push and GitHub web UI for PR creation
+- **Status**: RESOLVED (workaround — recurring)
+
+---
+
 ### Session 0306-2 (2026-03-06)
 
 - **Error**: CI tests failing — "filters out rows with monthlySales = 0" expected length 1, got 2; "filters out rows with monthlySales = null or undefined" expected length 1, got 3

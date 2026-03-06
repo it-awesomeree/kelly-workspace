@@ -6,6 +6,35 @@ Kelly's activity log for the AWESOMEREE Web App. Entries are organized by work s
 
 ---
 
+### Session 0306-3 (2026-03-06)
+
+**Feat: Shopee SG Analytics Table Page — Standalone AllBots Repository**
+
+- **Context**: Kelly wanted a Shopee SG analytics table page that fetches from `AllBots.Shopee_My_Products` + `AllBots.Shopee_Comp_Data` (region = 'SG'). Must not affect Shopee MY or VVIP pages.
+- **New files created (7)**:
+  - `lib/services/shopee-sg-products-repository.ts` — standalone SG data access layer (AllBots DB), copied from VVIP repo with table refs changed from `webapp_test.*` to AllBots, function names renamed from `Vvip` to `Sg`, similarity columns changed from NULL to real `mp.*` columns
+  - `app/api/shopee-sg/products/route.ts` — main API (GET/POST/PUT/PATCH/DELETE)
+  - `app/api/shopee-sg/products/counts/route.ts` — tab counts
+  - `app/api/shopee-sg/products/details/route.ts` — product details (images/descriptions)
+  - `app/analytics/table/shopee-sg/page.tsx` — full analytics table page (copied from test, cleared MY shop options)
+  - `app/analytics/table/shopee-sg/lib/api.ts` — client-side API helpers
+  - `app/analytics/table/shopee-sg/layout.tsx` — layout wrapper
+- **Modified files**: navigation (added "Shopee SG" tab), `lib/type.ts` (added "Shopee SG" to TabType)
+- **Fixes from CI review**:
+  - Added `"Shopee SG"` to `TabType` union type in `lib/type.ts`
+  - Disabled similarity exclusion on SG page (prevents writing to MY tables)
+- **DB verification**: Confirmed `AllBots.Shopee_My_Products` (0 SG rows, bot hasn't run) and `AllBots.Shopee_Comp_Data` (474 SG rows) — identical column structures to `webapp_test.*`
+- **Data flow verified**: All 80+ columns from SG repo SELECT correctly map to enrichment layer fields
+- **Branches & PRs**:
+  - `feature/shopee-sg-page-main` → PR to `main` (cherry-picked from original branch + fixes)
+  - `feature/shopee-sg-page-v2` → PR to `test` (branched from test, updated SG routes to use new SG repo)
+  - `feature/shopee-sg-page` — original branch (superseded by above two)
+- **Key decisions**: Shop filter left empty (no SG shop data yet), category filter kept same as MY (VVIP/VIP/Links Input/New Item), status/bulk-status/permanent-delete routes skipped for now
+- **Tools used**: Git, MySQL queries, code editing, GitHub MCP (failed on private repo — PRs created manually)
+- **Status**: Both branches pushed, PRs pending manual creation/review
+
+---
+
 ### Session 0306-2 (2026-03-06)
 
 **Fix: CI Test Failures + PRs for SKU Dedup / 0-Sales / Latest Date Scraped / Category Variations**
