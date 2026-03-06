@@ -8,6 +8,18 @@ Errors encountered during development and how they were resolved. Prevents repea
 
 ---
 
+### Session 0306-4 (2026-03-06)
+
+- **Error**: RDP "Connection Closed — The network connection was closed unexpectedly" when connecting to VM TT
+- **Discovered by**: Kelly (tried to RDP into VM TT)
+- **Root cause**: TermService (Remote Desktop) was stopped on VM TT (Status: Stopped, StartType: Manual)
+- **Impact**: Cannot RDP into VM TT to manage bot scripts or view desktop
+- **Resolution**: Started TermService via VM Control Plane (`Start-Service -Name TermService`). Service confirmed running, but Kelly reported still unable to connect — may be a network/firewall issue beyond the service state.
+- **Prevention**: Consider setting TermService StartType to Automatic on bot VMs so RDP is always available after reboot. Check firewall rules if service is running but connection still fails.
+- **Status**: PARTIALLY RESOLVED (service started, connection issue may persist)
+
+---
+
 ### Session 0306-3 (2026-03-06)
 
 - **Error**: Merge conflicts when PR'ing `feature/shopee-sg-page` (from `main`) to `test`

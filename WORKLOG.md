@@ -6,6 +6,22 @@ Kelly's activity log for the AWESOMEREE Web App. Entries are organized by work s
 
 ---
 
+### Session 0306-4 (2026-03-06)
+
+**VM TT — SG Screenshot Bot Timing Fix + RDP Service Restart**
+
+- **Context**: Kelly wanted to check the timing of the SG Shopee screenshot bot on VM TT, and couldn't RDP into the VM
+- **RDP fix**: Remote Desktop service (TermService) was stopped on VM TT. Started it via `Start-Service -Name TermService` through VM Control Plane — still couldn't connect (may need further investigation)
+- **Screenshot schedule found** in `C:\Users\Admin\Desktop\schedule\schedule.py`:
+  - `ShopeeMy_1145` — `Shopee.py` (MY screenshot) at **11:45 AM** Mon-Fri
+  - `ShopeeSG_1200` — `SGShopee.py` (SG screenshot) at **12:00 PM** Mon-Fri
+  - `Tiktok_1730` — `TT-AcountHealthScreenshot.py` (TikTok screenshot) at **5:00 PM** Mon-Fri
+- **Timing change**: `SGShopee.py` — increased page load wait before clicking export button from 10s → 25s (`time.sleep(10)` → `time.sleep(25)`)
+- **Script analysis**: `SGShopee.py` navigates to `employee.awesomeree.com.my/account-health/account-health/shopee-sg`, clicks export, downloads PNG to `C:\Users\Admin\Downloads`, sends to "Awesomeree Discussion" WhatsApp group tagging @Rubel. No archive/cleanup step — PNGs accumulate in Downloads.
+- **Tools used**: VM Control Plane (vm_inventory, vm_status, vm_schedules, vm_execute), PowerShell
+
+---
+
 ### Session 0306-3 (2026-03-06)
 
 **Feat: Shopee SG Analytics Table Page — Standalone AllBots Repository**
