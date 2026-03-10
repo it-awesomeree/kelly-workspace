@@ -8,6 +8,75 @@ Errors encountered during development and how they were resolved. Prevents repea
 
 ---
 
+### Session 0310-2 (2026-03-10)
+
+- **Error**: CI test "caps tie expansion at 10 even when all have same sales" failing — expected 10, got 15
+- **Discovered by**: GitHub Actions CI on PR to `test`
+- **Root cause**: `getQualifiedCompRows` was rewritten to per-product ranking. Old logic had `MAX_QUALIFIED_COMP_ROWS = 10` cap. New logic keeps all tied products — 15 products with identical sales all tie, so all 15 returned.
+- **Resolution**: Updated test to expect 15 and renamed to "includes all tied products when all have same sales" (commit `9ac808a`)
+- **Prevention**: When rewriting business logic, always check existing tests BEFORE pushing. Run `npx jest` locally.
+- **Status**: RESOLVED
+
+---
+
+- **Error**: Cherry-pick conflict on `app/api/shopee-my-vvip/products/route.ts` — "modify/delete"
+- **Context**: Cherry-picking `a4dada6` from `fix/comp-show-all-variation-on-sg` onto `main`
+- **Root cause**: VVIP route file exists on `test` but not on `main`. Cherry-pick modified a file that doesn't exist on target branch.
+- **Resolution**: `git rm app/api/shopee-my-vvip/products/route.ts` — excluded from main PR since it's test-only
+- **Prevention**: When cherry-picking from test-based branches to main, expect conflicts for test-only files. Plan to `git rm` them.
+- **Status**: RESOLVED
+
+---
+
+- **Error**: GitHub MCP `create_pull_request` returns "Not Found" + `gh` CLI not installed
+- **Context**: Tried both MCP and gh CLI to create PR for private repo
+- **Root cause**: MCP token lacks private repo access (recurring). gh CLI not installed on this machine.
+- **Resolution**: Provided manual PR creation URL for Kelly
+- **Prevention**: For `it-awesomeree` private repos, always use GitHub web UI for PR creation
+- **Status**: RESOLVED (workaround — recurring)
+
+---
+
+### Session 0310-1 (2026-03-10)
+
+- **Error**: HTTP 500 on Shopee SG page after adding debug code to `route.ts`
+- **Context**: Added `require("fs").writeFileSync(...)` and `console.log` debug statements to `app/api/shopee-sg/products/route.ts` to trace missing competitors
+- **Root cause**: Debug code introduced module-level mutable state (`_debugLines` array) and `require("fs")` in a Next.js API route, which may not work in all contexts. Also added too much debug scaffolding that broke the route.
+- **Resolution**: `git checkout -- app/api/shopee-sg/products/route.ts` to fully revert all debug changes
+- **Prevention**: For server-side debugging in Next.js API routes, use simple `console.log` only (no file writes, no module-level state). Better yet, write standalone test scripts to reproduce logic bugs outside the server.
+- **Status**: RESOLVED (reverted)
+
+---
+
+### Session 0306-5 (2026-03-06)
+
+- **Error**: GitHub MCP `create_or_update_file` returns "Permission Denied: Resource not accessible by personal access token" for `it-awesomeree/comp-analysis` repo
+- **Context**: Tried to push documentation files via `mcp__github__push_files`
+- **Root cause**: Same recurring issue — MCP GitHub token lacks access to private org repos
+- **Resolution**: Cloned repo via `git clone`, created files locally, pushed via git CLI
+- **Prevention**: For `it-awesomeree` private repos, always use git CLI. MCP tools won't work.
+- **Status**: RESOLVED (workaround)
+
+---
+
+- **Error**: `git push` rejected multiple times on comp-analysis repo
+- **Context**: Remote had new commits from other contributors between push attempts
+- **Root cause**: Multiple people (or CI) pushing to same branch concurrently
+- **Resolution**: `git pull --rebase origin main` before each push
+- **Prevention**: Always pull before pushing, especially on shared `main` branch
+- **Status**: RESOLVED
+
+---
+
+- **Error**: Claude-in-Chrome browser extension kept disconnecting during screenshot attempts
+- **Context**: Tried to take screenshots of the comp analysis page for documentation visuals
+- **Root cause**: Browser extension instability — same recurring issue from previous sessions
+- **Resolution**: Kelly said "nevermine, no need to put picture" — switched to ASCII art diagrams instead
+- **Prevention**: For documentation visuals, prefer ASCII diagrams over browser screenshots when possible
+- **Status**: RESOLVED (workaround)
+
+---
+
 ### Session 0306-4 (2026-03-06)
 
 - **Error**: RDP "Connection Closed — The network connection was closed unexpectedly" when connecting to VM TT

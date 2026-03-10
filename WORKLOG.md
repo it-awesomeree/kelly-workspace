@@ -6,6 +6,89 @@ Kelly's activity log for the AWESOMEREE Web App. Entries are organized by work s
 
 ---
 
+### Session 0310-2 (2026-03-10)
+
+**Fix: Test Failure + PR to main — SP Sales Value Sort, Comp Dedup, Per-Product Ranking**
+
+- **Context**: PR to `test` from `fix/comp-show-all-variation-on-sg` had a failing CI test. Then created a separate PR to `main` with the same changes (minus VVIP route + loading indicator).
+- **Test fix** (`lib/shared/shopee-history-calculations.test.ts`):
+  - Test "caps tie expansion at 10 even when all have same sales" expected 10 rows but got 15
+  - Old logic: hard cap at `MAX_QUALIFIED_COMP_ROWS = 10`. New per-product ranking: all tied products kept
+  - Fix: renamed test to "includes all tied products when all have same sales", changed expected from 10 → 15
+  - Commit: `9ac808a` on `fix/comp-show-all-variation-on-sg`, pushed to origin
+- **PR to main** (`fix/comp-show-all-variation-on-sg-main`):
+  - Created branch from `main`, cherry-picked `a4dada6` and `9ac808a`
+  - **Conflict 1**: `app/api/shopee-my-vvip/products/route.ts` — file doesn't exist on `main` (only on `test`). Resolved: `git rm`
+  - **Conflict 2**: `lib/shared/shopee-history-calculations.ts` line 609-613 — comment difference only (function code identical on both sides). Resolved: kept incoming comment
+  - Reverted `app/analytics/table/shopee-my/page.tsx` (`silent: true → false` loading indicator change — Kelly said exclude)
+  - **Final 4 files changed**:
+    - `app/analytics/table/shopee-sg/page.tsx` — removed `backfillCompProducts` prop (now built into `getQualifiedCompRows` Step 1.5)
+    - `app/api/shopee-sg/products/route.ts` — comp dedup fix (keep highest sales row)
+    - `lib/shared/shopee-history-calculations.ts` — `computeParentSortValue` uses `shopeeValueRaw` from DB + `getQualifiedCompRows` per-product ranking rewrite
+    - `lib/shared/shopee-history-calculations.test.ts` — test update for tied products
+  - Branch pushed, PR URL: https://github.com/it-awesomeree/awesomeree-web-app/pull/new/fix/comp-show-all-variation-on-sg-main
+  - PR created manually by Kelly (GitHub MCP + gh CLI both unavailable for private repo)
+- **Verification**: All 306 tests pass (28 suites). 3 unrelated smoke test failures (`test-smoke.test.ts` — 1688 order fields)
+- **Tools used**: Git cherry-pick, conflict resolution, jest, code editing
+
+---
+
+### Session 0310-1 (2026-03-10)
+
+**Investigation: SG Comp Analysis — Missing Competitors in UI**
+
+- **Context**: Shopee SG comp analysis page shows wrong competitor counts. Joycon: DB has 3 comps → UI shows 2 COMP. Dustbin 60L: DB has 2 → shows 1. Dustbin 50L: DB has 3 → shows 1. Kelly's branch `fix/ensure-all-variation-shown-correctly-based-on-the-highest-priority` already had a client-side fix in `getQualifiedCompRows()`.
+- **Client-side fix reviewed** (`lib/shared/shopee-history-calculations.ts`):
+  - Already on the branch — changes `getQualifiedCompRows()` Step 1 from ranking individual **rows** to ranking **products** (grouped by shopName + compName). Fixes the issue where one comp with many variation rows would hog all top 3 row slots, dropping other competitors.
+  - Removed old `options?: { backfillProducts?: boolean }` parameter — backfill is now always built into Step 1.5.
+  - Removed `MAX_QUALIFIED_COMP_ROWS = 10` cap — no longer applied.
+- **Root cause investigation for remaining missing comps**:
+  - DB verified: all 3 Joycon comps exist (jateko.sg 171 max sales, Clicks.SG 45, Shopee Choice Global 0). All same date, all same our_link JOIN.
+  - Confirmed client-side fix alone doesn't resolve the issue — problem is **server-side** in `limitAndDedupCompetitors()` in `app/api/shopee-sg/products/route.ts`.
+  - The function assigns comp variations to our variations by name matching (`variationsMatchScore`). Shopee Choice Global uses abbreviations (AC, BK, BR, PO, RB) that score 0 against our variation names (Blue & Red, Pikachu, etc.).
+  - When name-matching fails, comps go through round-robin assignment to our vars. The lookup key `${ourVar}\0${ck}\0${compVar}` should find the row since the DB JOIN produces all combinations — but **comps are still missing in the UI**.
+  - Wrote standalone Node.js test simulating the logic — test passes (all comps survive). Real-world issue could not be reproduced in isolation.
+- **Attempted fix** (reverted): Added `compVarLookup` fallback Map keyed by `ck + compVar` only, with row cloning when primary lookup misses. Reverted because it didn't address the actual issue and Kelly asked to revert.
+- **Debug code** (reverted): Added console.log and file-write debug to `route.ts`. Caused HTTP 500 (require("fs") in edge-ish context). All debug code reverted — `route.ts` is clean.
+- **Files changed (net)**: Zero. All my changes to `route.ts` were reverted. Only Kelly's pre-existing changes on the branch remain.
+- **Open issue**: Server-side `limitAndDedupCompetitors()` drops comps for products with many variations and non-matching variation names. Needs further investigation — possibly a deeper issue in how the enrichment or query pipeline handles large row counts.
+- **Tools used**: MySQL MCP queries, Git, code reading, Node.js test script
+
+---
+
+### Session 0306-5 (2026-03-06)
+
+**Docs: Comp Analysis Frontend & Backend Documentation**
+
+- **Context**: Agnes asked Kelly to create documentation describing the Comp Analysis feature — both frontend and backend — for the `it-awesomeree/comp-analysis` repo.
+- **Repo**: `https://github.com/it-awesomeree/comp-analysis` (separate from web app repo)
+- **Scope**: Shopee MY only (SG and VVIP excluded)
+- **Frontend doc** (`comp 1/comp-analysis-frontend.md`):
+  - Overview, visual ASCII diagrams (table layout + 3-level expand/collapse hierarchy)
+  - Complete column reference (37 columns) with source fields, DB columns, formats, and which levels they appear on
+  - 11 business rules: top 3 competitors + ties, variation display, similarity scoring, exclusion behavior, category priority, sales resolution, mutual-exclusive expand, advertising aggregation, automated remark tokens
+  - File structure, page architecture, component deep dives (grouped-rows, product-row, table-header, shared components)
+  - API layer, data flow, key calculations, type definitions, UI features, product lifecycle, export, caching
+- **Backend doc** (`comp 1/comp-analysis-backend.md`):
+  - API routes: products CRUD, similarity exclusion (POST/GET/DELETE), tab counts, AI analysis (Gemini 2.0 Flash)
+  - Full database schema: 5 tables (Shopee_Comp, Similarity_Exclusions, Group_Summary, Comp_Remarks, comp_ai_test)
+  - Repository layer deep dive: two-phase grouped pagination, exclusion JOINs, WHERE clause building, aggregate sorting with CTEs
+  - Enrichment pipeline: dedup → batch external data → row transform → comp filtering → grouping → metrics
+  - db.ts connection pooling (3 pools), executeWithRetry pattern
+  - Caching: count cache (120s TTL, LRU), summary table (10min), HTTP cache headers
+  - Security: parameterized queries, whitelist maps, FOR UPDATE locks, JSON_ARRAY_APPEND atomicity
+  - End-to-end data pipeline diagrams
+- **Verification**: Cross-checked all 4 of Kelly's questions against actual code — confirmed: products from DB, most columns sortable (27 of ~37), variation matching by bot, SKU dedup merges same-SKU variations, top 3 + ties rule with cap at 10
+- **Commits**:
+  - `2fc3878` — comprehensive frontend documentation
+  - `576d79e` — remove branch/date metadata
+  - `0710e55` — add visual diagrams, column reference, business rules
+  - `28ba7f3` → `fde3f8e` — comprehensive backend documentation + moved to comp 1
+- **Tools used**: 5 parallel Explore agents (frontend), 3 parallel Explore agents (backend), git CLI, code reading
+- **Status**: Both docs pushed to `main` on comp-analysis repo
+
+---
+
 ### Session 0306-4 (2026-03-06)
 
 **VM TT — SG Screenshot Bot Timing Fix + RDP Service Restart**
