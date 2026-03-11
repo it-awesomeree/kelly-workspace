@@ -5,6 +5,28 @@ Kelly's activity log for the AWESOMEREE Web App. Entries are organized by work s
 **Session ID Convention**: Use `MMDD-N` format (e.g., `0219-1`) where MMDD is the date and N is the session number for that day.
 
 ---
+### Session 0311-1 (2026-03-11)
+
+**Feat: Adding the similarity features inside the VVIP Pgae**
+
+  1. Checked Shopee_Variation_Match for SG data — Confirmed no SG variation match data exists in either webapp_test or AllBots database. The bot only
+  processed MY products (68 MY, 0 SG). SG variation matching from the table is not possible yet.
+  2. Created SG comp link fix branch → PR to test — Branch fix/sg-comp-link-mismatch-test, you created the PR yourself.
+  3. Created same fix branch → PR to main — Branch fix/sg-comp-link-mismatch-main, PR #557. Fixed the our_link domain mismatch by switching to our_item_id
+  JOIN.
+  4. Addressed PR #557 review from Agnes — Two items:
+    - Fixed insertSgProduct() regression — added our_item_id extraction from URL into the INSERT
+    - Updated PR description to mention the 10-column migration on Shopee_Comp_Data
+    - PR #557 was merged to main.
+  5. Created branch fix/sg-variation-match (from test) — Pushed to GitHub for others to work on.
+  6. Investigated sorting & date filter logic — Reviewed how VVIP, SG, and Shopee MY pages sort and filter by date. All filter on cd.date_taken /
+  date_taken.
+  7. Investigated date filter bug on Shopee MY — You saw mixed dates (09/03 and 04/03) when filtering for March 4th. Investigation still in progress — we
+  confirmed the API sends dateFrom correctly but need to check the response data to confirm if it's a display issue or a real data issue. You were about to
+  check DevTools Response tab.
+  8. Confirmed feature/vvip-sg-similarity has nothing to do — VVIP variation matching already merged to test via PRs #553 and #555.
+
+---
 
 ### Session 0310-3 (2026-03-10)
 
