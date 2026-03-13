@@ -51,6 +51,56 @@ Kelly's activity log for the AWESOMEREE Web App. Entries are organized by work s
 
 ---
 
+### Session 0313-1 (2026-03-13)
+
+**GRBT-267 — Parts Shortage Ordering: Date Normalization Fix (Path B → Path A)**
+
+- **Context**: Human Review Gate Path B feedback — after setting Date Order on the Parts Shortage page (status changes to Warehouse), clicking Save Changes returned 500 Internal Server Error. Previous wrong fix (Radix Dialog `onPointerDownOutside`) was already merged to test but didn't address the issue.
+- **Root cause investigation**:
+  - Kelly's screenshot showed PATCH `/api/parts-shortage-ordering/79` returning **500** in browser console
+  - Checked DB: `webapp_test.parts_shortage_ordering` — `date_order` column is `DATE` type, MySQL `sql_mode` includes `STRICT_TRANS_TABLES`
+  - API returns dates as ISO strings (e.g. `"2026-03-16T16:00:00.000Z"`). When user edits a case without re-picking the date, the raw ISO string is sent to PATCH endpoint. MySQL `DATE` column rejects ISO format in strict mode → SQL error → 500
+- **Fix**: Added `normalizeDate()` helper in edit form's `onSubmit` — strips ISO strings to `YYYY-MM-DD` via `.split("T")[0]` for both `date` and `date_order` fields
+- **Branches & PRs**:
+  - `fix/GRBT-267-date-normalize` → PR #594 to `test` (merged)
+  - `promote/GRBT-267` → PR #596 to `main` (cherry-picked 2 commits: image upload + date fix)
+- **Pipeline 2**: Path A confirmed by Kelly, ai-ops lesson updated, production PR created
+- **Files changed**: `app/service-requests/parts-shortage/page.tsx` (1 file, 9 insertions, 3 deletions)
+- **Tools used**: MySQL MCP (schema check, sql_mode check), git cherry-pick, GitHub web UI (PRs)
+
+---
+
+### Session 0310-4 (2026-03-10)
+
+**Investigation: VVIP Similarity Logic — Shopee MY vs VVIP Architecture Comparison**
+
+- **Context**: Kelly wanted to check if the VVIP similarity logic works the same as Shopee MY. Found they use fundamentally different database designs and bot behaviors.
+- **Branch**: `feature/vvip-sg-similarity` (confirmed based on `test`)
+- **No code changes** — research only
+
+**Key Findings**:
+
+1. **Database schema difference**:
+   - Shopee MY: `Shopee_Comp` — single table, similarity columns on each comp row (per competitor pair)
+   - VVIP: `Shopee_My_Products` has similarity columns (per our product), `Shopee_Comp_Data` has NO similarity columns
+   - `Shopee_My_Products` has 1,235/1,450 rows with similarity data already populated
+
+2. **Bot comparison** (same Gemini AI prompt, different write targets):
+   - VM3 (`C:\Users\Admin\Desktop\Shopee Comp My links Api\ca_similarity_check.py`): targets `Shopee_Comp`, processes EVERY competitor pair, no ROW_NUMBER
+   - VM TT (`C:\Users\Admin\Desktop\ca_sg\ca_similarity_check.py`): targets `Shopee_My_Products` + `Shopee_Comp_Data`, uses ROW_NUMBER to pick only 1 competitor per product, writes to `mp` row
+   - VM TT code comment: "scores are stored on Shopee_My_Products (not per-pair), so processing multiple competitors wastes API calls (only the last write survives)"
+
+3. **Web app code**: `shopee-vvip-products-repository.ts` lines 178-187 has all 10 similarity columns as `NULL AS` — not wired up at all
+
+**Two options identified**:
+- **Option A** (easy): Swap `NULL AS` → `mp.*` in repo. No DB/bot change. All comps show same score.
+- **Option B** (full Shopee MY parity): Add columns to `Shopee_Comp_Data` + update bot (remove ROW_NUMBER, write per-pair) + read from `cd.*`. Each comp gets unique score.
+
+- **Status**: Pending decision — Kelly discussing with buddy (bot developer) on Option A vs B
+- **Tools used**: MySQL MCP queries, VM Control Plane (vm_inventory, vm_list_files, vm_read_file, vm_execute), code reading
+
+---
+
 ### Session 0310-3 (2026-03-10)
 
 **Feat: VVIP Variation Pairing via Shopee_Variation_Match Table**

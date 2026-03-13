@@ -37,6 +37,28 @@ Errors encountered during development and how they were resolved. Prevents repea
 ---
 
 
+### Session 0313-1 (2026-03-13)
+
+- **Error**: PATCH `/api/parts-shortage-ordering/79` returning 500 Internal Server Error when editing a case with existing Date Order
+- **Discovered by**: Kelly (console screenshot showing 500 on PATCH)
+- **Root cause**: API GET returns dates as ISO strings (e.g. `"2026-03-16T16:00:00.000Z"`). Edit form stores this in React state. When user saves without re-picking the date, raw ISO string is sent to PATCH endpoint. MySQL `date_order` column is `DATE` type and `STRICT_TRANS_TABLES` mode rejects the ISO format — causing SQL error.
+- **Impact**: Users cannot save changes on any Parts Shortage case that already has a Date Order set, unless they re-pick the date
+- **Resolution**: Added `normalizeDate()` in edit form `onSubmit` — strips ISO strings to `YYYY-MM-DD` via `.split("T")[0]`. PR #594 → test (merged).
+- **Prevention**: When forms submit data loaded from an API, always normalize date fields to `YYYY-MM-DD` before sending to MySQL. JSON serialization turns MySQL DATE into ISO strings with timezone offset.
+- **Status**: RESOLVED
+
+---
+
+- **Error**: Wrong fix applied first — Radix Dialog `onPointerDownOutside`/`onInteractOutside` handlers (PR #590)
+- **Discovered by**: Kelly (tested on staging, save button still failed)
+- **Root cause**: Misdiagnosed the issue as native date picker causing Radix Dialog to close. Didn't check the HTTP response (500 error) before assuming a UI framework issue.
+- **Impact**: Wasted one Path B round
+- **Resolution**: Reverted wrong fix, investigated actual HTTP error via console screenshot, found the real root cause (ISO date format)
+- **Prevention**: When "button doesn't respond", check Network tab for HTTP errors BEFORE assuming UI framework bugs. "Saving..." stuck state means the request was sent — check if it returned an error.
+- **Status**: RESOLVED (lesson captured in ai-ops)
+
+---
+
 ### Session 0310-3 (2026-03-10)
 
 - **Error**: Product 20525200467 showing "0 COMP" despite having 16 comp rows in DB
